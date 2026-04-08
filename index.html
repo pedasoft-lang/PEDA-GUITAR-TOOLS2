@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peda Guitar Tools - Master Edition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header><h1 class="logo">PEDA GUITAR TOOLS</h1></header>
+        <div class="toolbar">
+            <div class="tool-card"><span class="label">Corde:</span><select id="stringNumSelector" class="custom-select"><option value="6">6 Corde</option><option value="7">7 Corde</option><option value="8">8 Corde</option></select></div>
+            <div class="tool-card"><span class="label">Accordatura:</span><select id="tuningSelector" class="custom-select"></select></div>
+            <button id="resetBtn" class="reset-btn">Svuota Manico</button>
+        </div>
+        <div class="fretboard-container"><div id="fretGrid" class="fretboard-body"></div></div>
+        
+        <div class="modules-section">
+            <div class="modules-tabs">
+                <button id="toggleChordBtn" class="module-btn">RILEVATORE ACCORDO</button>
+                <button id="toggleScaleBtn" class="module-btn">SCALE MODALI</button>
+                <button id="toggleExoticBtn" class="module-btn">SCALE ESOTICHE</button>
+                <button id="toggleCagedBtn" class="module-btn">SISTEMA CAGED</button>
+            </div>
+
+            <div id="moduleContent" class="module-content-area hidden">
+                <div class="module-grid-layout">
+                    <div class="controls-column">
+                        <div class="tool-card"><span class="label">Tonica:</span><select id="commonRoot" class="custom-select"></select></div>
+                        <div class="tool-card"><span class="label">Tipo:</span><select id="commonType" class="custom-select"></select></div>
+                        
+                        <div id="displayModeGroup" class="display-mode-controls">
+                            <div class="tool-card">
+                                <span class="label">Visualizza:</span>
+                                <select id="displayMode" class="custom-select">
+                                    <option value="full">Tutto il Manico</option>
+                                    <option value="3nps" id="opt3nps">3 Note per Corda</option>
+                                    <option value="box-shapes" id="optBox" style="display:none;">Box / Forme</option>
+                                </select>
+                            </div>
+                            <div id="boxShapeGroup" class="tool-card" style="display:none;">
+                                <span class="label">Forma:</span>
+                                <select id="boxShapeSelector" class="custom-select">
+                                    <option value="forma-e">Forma E</option>
+                                    <option value="forma-a" selected>Forma A</option>
+                                    <option value="forma-d">Forma D</option>
+                                    <option value="forma-g">Forma G</option>
+                                    <option value="forma-c">Forma C</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="octaveGroup" class="btn-group">
+                            <button id="octaveDown" class="sub-btn">Ottava -</button>
+                            <button id="octaveUp" class="sub-btn">Ottava +</button>
+                        </div>
+                        <div id="extensionGroup" class="btn-group">
+                            <button id="toggleLowString" class="sub-btn">6ª Corda</button>
+                            <button id="toggleOpenStrings" class="sub-btn hidden">Corde Vuoto</button>
+                            <button id="togglePentatonic" class="sub-btn hidden">Pentatonica</button>
+                            <button id="toggleBlues" class="sub-btn hidden">Blues</button>
+                        </div>
+                    </div>
+
+                    <div class="info-column">
+                        <div class="module-info-display">
+                            <div class="info-row" id="rowDegrees"><span class="label-tiny">Gradi:</span></div>
+                            <div class="info-row" id="rowNotes"><span class="label-tiny">Note:</span></div>
+                            <div class="info-row" id="rowIntervals"><span class="label-tiny">Intervalli:</span></div>
+                        </div>
+                        <div class="legend-mini">
+                            <div class="leg-item"><span class="dot-leg root"></span> <span class="leg-text">Tonalità</span></div>
+                            <div class="leg-item"><span class="dot-leg major"></span> <span class="leg-text">Grado Maggiore</span></div>
+                            <div class="leg-item"><span class="dot-leg minor"></span> <span class="leg-text">Grado Minore</span></div>
+                            <div class="leg-item"><span class="dot-leg blue"></span> <span class="leg-text">Blue Note</span></div>
+                            <div class="leg-item"><span class="dot-leg extra"></span> <span class="leg-text">Fuori Scala</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="chordMenu" class="hidden">
+                    <div class="module-info-display">
+                        <div id="chordName" class="chord-title" style="font-weight: bold; font-size: 1.8rem; color: #00d2ff; text-align: center; margin-bottom: 10px;">---</div>
+                        <div class="info-row" id="chordRowDegrees"><span class="label-tiny">Gradi:</span></div>
+                        <div class="info-row" id="chordRowNotes"><span class="label-tiny">Note:</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

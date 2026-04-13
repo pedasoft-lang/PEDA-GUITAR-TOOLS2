@@ -1,10 +1,24 @@
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const NOTES_FLAT = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+
 let octaveOffset = 0;
 let includeLowString = false;
 let allowOpenStrings = false; 
 let isPentatonic = false;
 let showBlues = false;
-let boxShapeMode = "forma-e"; // Default iniziale
+let boxShapeMode = "forma-e"; 
+
+function getNoteName(index, direction = "asc") {
+    index = (index + 12) % 12;
+    return direction === "asc" ? NOTES[index] : NOTES_FLAT[index];
+}
+
+// NUOVA FUNZIONE PER EFFETTO VIBRAZIONE
+function vibrateString(fretElement) {
+    const row = fretElement.parentElement;
+    row.classList.add('vibrating');
+    setTimeout(() => row.classList.remove('vibrating'), 150);
+}
 
 const RilevatoreAccordi = {
     rules: [
@@ -27,7 +41,7 @@ const RilevatoreAccordi = {
         { name: "aug",   intervals: [0, 4, 8] },
         { name: "5",     intervals: [0, 7] }
     ],
-    analyze(notesSuonate) {
+    analyze(notesSuonate, direction = "asc") {
         if (notesSuonate.length < 2) return { name: "---", root: null };
         const uniqueIndices = [...new Set(notesSuonate.map(n => n.index))];
         const lowestNoteIdx = notesSuonate[0].index; 
@@ -38,8 +52,8 @@ const RilevatoreAccordi = {
                 const ruleInts = rule.intervals.map(i => i % 12);
                 const isMatch = ruleInts.every(i => currentInts.includes(i)) && currentInts.every(i => ruleInts.includes(i));
                 if (isMatch) {
-                    const slash = (rIdx !== lowestNoteIdx) ? "/" + NOTES[lowestNoteIdx] : "";
-                    const name = NOTES[rIdx] + rule.name + slash;
+                    const slash = (rIdx !== lowestNoteIdx) ? "/" + getNoteName(lowestNoteIdx, direction) : "";
+                    const name = getNoteName(rIdx, direction) + rule.name + slash;
                     if (rIdx === lowestNoteIdx) return { name, root: rIdx };
                     if (!bestMatch) bestMatch = { name, root: rIdx };
                 }
@@ -84,15 +98,13 @@ const THEORY = {
 let activeModule = null;
 
 const SpecialModulesManager = {
-    // Calcola il primo tasto utile della tonica su una corda specifica per determinare l'ordine
     getShapePosition(shapeKey, rootIdx) {
         const rows = Array.from(document.querySelectorAll('.string-row')).reverse();
         const config = THEORY.BOX_SHAPES.CAGED[shapeKey];
         const openNoteName = rows[config.rootString].querySelector('.fret[data-fret="0"] .note-name').innerText;
-        const openNoteIdx = NOTES.indexOf(openNoteName);
+        const openNoteIdx = NOTES.indexOf(openNoteName) === -1 ? NOTES_FLAT.indexOf(openNoteName) : NOTES.indexOf(openNoteName);
         let firstFret = (rootIdx - openNoteIdx + 12) % 12;
         
-        // Gestione eccezioni per allineamento visivo (es. Forma G e C partono "indietro" rispetto alla tonica)
         if (shapeKey === "forma-g") firstFret -= 3;
         if (shapeKey === "forma-c") firstFret -= 3;
         if (firstFret < 0) firstFret += 12;
@@ -102,20 +114,12 @@ const SpecialModulesManager = {
     updateShapeOrder(rootIdx) {
         const sel = document.getElementById('boxShapeSelector');
         if (!sel) return;
-        
-        // Crea una lista delle forme con la loro posizione calcolata sul manico
         const shapes = Object.keys(THEORY.BOX_SHAPES.CAGED).map(key => {
             return { key: key, pos: this.getShapePosition(key, rootIdx), label: THEORY.BOX_SHAPES.CAGED[key].label };
         });
-
-        // Ordina in base al tasto più basso
         shapes.sort((a, b) => a.pos - b.pos);
-
-        // Aggiorna le opzioni del selettore
         const currentVal = sel.value;
         sel.innerHTML = shapes.map(s => `<option value="${s.key}">${s.label}</option>`).join('');
-        
-        // Se la forma precedente esiste ancora nella nuova lista, mantienila selezionata, altrimenti prendi la prima
         if (shapes.find(s => s.key === currentVal)) {
             sel.value = currentVal;
             boxShapeMode = currentVal;
@@ -141,7 +145,6 @@ const SpecialModulesManager = {
     },
 
     applyBox(rootIdx, allFrets) {
-        allFrets.forEach(f => f.classList.remove('active', 'is-root', 'is-minor', 'is-major', 'invalid', 'is-blue'));
         const rows = Array.from(document.querySelectorAll('.string-row')).reverse(); 
         let config = JSON.parse(JSON.stringify(THEORY.BOX_SHAPES.CAGED[boxShapeMode]));
         const intervals = this.getIntervals();
@@ -151,7 +154,7 @@ const SpecialModulesManager = {
 
         const targetStringIdx = config.rootString;
         const openNoteName = rows[targetStringIdx].querySelector('.fret[data-fret="0"] .note-name').innerText;
-        const openNoteIdx = NOTES.indexOf(openNoteName);
+        const openNoteIdx = NOTES.indexOf(openNoteName) === -1 ? NOTES_FLAT.indexOf(openNoteName) : NOTES.indexOf(openNoteName);
         
         let possibleFrets = [];
         for (let f = 0; f <= 24; f++) {
@@ -160,20 +163,19 @@ const SpecialModulesManager = {
 
         let rootFret = possibleFrets[0];
 
-        // --- BLINDATURA LOGICA PER TONALITÀ DO (C) ---
-        if (rootIdx === 0) {
-            if (!isMinor) {
+        if (isMinor) {
+            if (boxShapeMode === "forma-e") { config.range = [-1, 0, 1, 2, 3]; }
+            else if (boxShapeMode === "forma-a") { config.range = [0, 1, 2, 3]; }
+            else if (boxShapeMode === "forma-d") { config.range = [0, 1, 2, 3]; }
+            else if (boxShapeMode === "forma-g") { config.range = [-3, -2, -1, 0, 1]; }
+            else if (boxShapeMode === "forma-c") { config.range = [-3, -2, -1, 0, 1]; }
+        } else {
+            if (rootIdx === 0) {
                 if (boxShapeMode === "forma-a") { rootFret = 3; config.range = [-1, 0, 1, 2, 3]; } 
                 else if (boxShapeMode === "forma-g") { rootFret = 8; config.range = [-4, -3, -2, -1, 0]; } 
                 else if (boxShapeMode === "forma-e") { rootFret = 8; config.range = [-1, 0, 1, 2]; } 
                 else if (boxShapeMode === "forma-d") { rootFret = 10; config.range = [-1, 0, 1, 2, 3]; } 
                 else if (boxShapeMode === "forma-c") { rootFret = 15; config.range = [-3, -2, -1, 0]; }
-            } else {
-                if (boxShapeMode === "forma-a") { rootFret = 3; config.range = [0, 1, 2, 3]; } 
-                else if (boxShapeMode === "forma-g") { rootFret = 8; config.range = [-3, -2, -1, 0, 1]; } 
-                else if (boxShapeMode === "forma-e") { rootFret = 8; config.range = [-1, 0, 1, 2, 3]; } 
-                else if (boxShapeMode === "forma-d") { rootFret = 10; config.range = [0, 1, 2, 3]; } 
-                else if (boxShapeMode === "forma-c") { rootFret = 15; config.range = [-3, -2, -1, 0, 1]; }
             }
         }
 
@@ -181,7 +183,21 @@ const SpecialModulesManager = {
 
         rows.forEach((row, sIdx) => {
             const stringOpenNoteName = row.querySelector('.fret[data-fret="0"] .note-name').innerText;
-            const stringOpenIdx = NOTES.indexOf(stringOpenNoteName);
+            const stringOpenIdx = NOTES.indexOf(stringOpenNoteName) === -1 ? NOTES_FLAT.indexOf(stringOpenNoteName) : NOTES.indexOf(stringOpenNoteName);
+            
+            if (allowOpenStrings) {
+                for (let f = 1; f <= 24; f++) {
+                    const currentNoteIdx = (stringOpenIdx + f) % 12;
+                    const diff = (currentNoteIdx - rootIdx + 12) % 12;
+                    if (intervals.includes(diff)) {
+                        const targetFret = row.querySelector(`.fret[data-fret="${f}"]`);
+                        if (targetFret) {
+                            targetFret.classList.add('active', 'ghost-note');
+                        }
+                    }
+                }
+            }
+
             config.range.forEach(fOffset => {
                 const fPos = rootFret + fOffset;
                 if (fPos >= 0 && fPos <= 24) {
@@ -189,7 +205,10 @@ const SpecialModulesManager = {
                     const diff = (currentNoteIdx - rootIdx + 12) % 12;
                     if (intervals.includes(diff)) {
                         const targetFret = row.querySelector(`.fret[data-fret="${fPos}"]`);
-                        if (targetFret) targetFret.classList.add('active');
+                        if (targetFret) {
+                            targetFret.classList.add('active');
+                            targetFret.classList.remove('ghost-note');
+                        }
                     }
                 }
             });
@@ -226,7 +245,7 @@ function render() {
         const row = document.createElement('div');
         row.className = "string-row";
         row.style.setProperty('--sw', (1.2 + sIdx * 0.9) + "px");
-        let startIdx = NOTES.indexOf(startNote.toUpperCase());
+        let startIdx = NOTES.indexOf(startNote.toUpperCase()) === -1 ? NOTES_FLAT.indexOf(startNote.toUpperCase()) : NOTES.indexOf(startNote.toUpperCase());
         for (let f = 0; f <= 24; f++) {
             const fret = document.createElement('div');
             fret.className = "fret"; fret.dataset.fret = f;
@@ -234,14 +253,17 @@ function render() {
                 if (savedStates[sIdx].active) fret.classList.add('active');
                 if (savedStates[sIdx].muted) fret.classList.add('is-muted');
             } else if (f === 0) { fret.classList.add('active'); }
-            const noteName = NOTES[(startIdx + f) % 12];
+            const noteName = getNoteName((startIdx + f) % 12);
             let fnum = (sIdx === 0 && [3,5,7,9,12,15,17,19,21,24].includes(f)) ? '<div class="fnum">' + f + '</div>' : "";
             if (f === 0) {
                 fret.innerHTML = fnum + `<button class="integrated-btn" onclick="transpose(${sIdx}, -1); event.stopPropagation();">-</button><div class="note-circle"><span class="note-name">${noteName}</span><span class="interval-name"></span></div><button class="integrated-btn" onclick="transpose(${sIdx}, 1); event.stopPropagation();">+</button>`;
             } else {
                 fret.innerHTML = fnum + '<div class="note-circle"><span class="note-name">' + noteName + '</span><span class="interval-name"></span></div><div class="mute-x">✕</div>';
             }
+            
+            // AGGIORNATO: Chiamata a vibrateString integrata
             fret.onclick = () => {
+                vibrateString(fret);
                 if (f === 0) {
                     fret.classList.toggle('is-muted');
                     if (fret.classList.contains('is-muted')) fret.classList.remove('active');
@@ -272,7 +294,7 @@ function transpose(sIdx, step) {
     const sNum = parseInt(document.getElementById('stringNumSelector').value);
     const tKey = document.getElementById('tuningSelector').value;
     let tuning = THEORY.TUNINGS[sNum][tKey];
-    let idx = NOTES.indexOf(tuning[sIdx].toUpperCase());
+    let idx = NOTES.indexOf(tuning[sIdx].toUpperCase()) === -1 ? NOTES_FLAT.indexOf(tuning[sIdx].toUpperCase()) : NOTES.indexOf(tuning[sIdx].toUpperCase());
     tuning[sIdx] = NOTES[(idx + step + 12) % 12];
     render();
 }
@@ -286,7 +308,22 @@ function updateLogic(autoFill = true) {
     const rootIdx = parseInt(rootEl.value);
     const displayMode = modeEl.value;
 
-    // Se siamo in modulo CAGED, aggiorna l'ordine delle forme nel selettore
+    let currentDirection = "asc";
+    const activeFretsNonNut = Array.from(allFrets).filter(f => f.classList.contains('active') && f.dataset.fret !== "0");
+    if (activeFretsNonNut.length >= 2) {
+        const firstActiveFret = parseInt(activeFretsNonNut[0].dataset.fret);
+        const lastActiveFret = parseInt(activeFretsNonNut[activeFretsNonNut.length - 1].dataset.fret);
+        if (lastActiveFret < firstActiveFret) {
+            currentDirection = "desc";
+        }
+    }
+
+    allFrets.forEach(f => {
+        f.classList.remove('is-root', 'is-minor', 'is-major', 'is-blue', 'invalid', 'ghost-note');
+        const intSpan = f.querySelector('.interval-name');
+        if (intSpan) intSpan.innerText = "";
+    });
+
     if (activeModule === 'caged') {
         SpecialModulesManager.updateShapeOrder(rootIdx);
     }
@@ -302,20 +339,20 @@ function updateLogic(autoFill = true) {
     document.getElementById('toggleBlues').classList.toggle('active-glow', showBlues);
 
     if (activeModule === 'chord') {
-        allFrets.forEach(f => { f.classList.remove('invalid', 'is-root', 'is-minor', 'is-major', 'is-blue'); if(f.querySelector('.interval-name')) f.querySelector('.interval-name').innerText = ""; });
         const rows = Array.from(document.querySelectorAll('.string-row'));
         let noteObjects = [];
         rows.reverse().forEach(row => {
             const active = row.querySelector('.fret.active:not(.is-muted)');
             if (active) {
                 const noteName = active.querySelector('.note-name').innerText;
-                noteObjects.push({ name: noteName, index: NOTES.indexOf(noteName) });
+                const noteIdx = NOTES.indexOf(noteName) === -1 ? NOTES_FLAT.indexOf(noteName) : NOTES.indexOf(noteName);
+                noteObjects.push({ name: getNoteName(noteIdx, currentDirection), index: noteIdx });
             }
         });
         const chordRowDeg = document.getElementById('chordRowDegrees'), chordRowNot = document.getElementById('chordRowNotes');
         chordRowDeg.innerHTML = '<span class="label-tiny">Gradi:</span>'; chordRowNot.innerHTML = '<span class="label-tiny">Note:</span>';
         if (noteObjects.length >= 1) {
-            const result = RilevatoreAccordi.analyze(noteObjects);
+            const result = RilevatoreAccordi.analyze(noteObjects, currentDirection);
             document.getElementById('chordName').innerText = result.name;
             if (result.root !== null) {
                 const uniqueNotes = [];
@@ -327,13 +364,14 @@ function updateLogic(autoFill = true) {
                     const degLabel = THEORY.INTERVALS[diff];
                     const colorClass = diff === 0 ? 'is-root' : degLabel.includes('b') ? 'is-minor' : 'is-major';
                     chordRowDeg.innerHTML += `<div class="info-cell"><span class="info-val">${degLabel}</span></div>`;
-                    chordRowNot.innerHTML += `<div class="info-cell"><span class="note-val-display ${colorClass}">${noteObj.name}</span></div>`;
+                    chordRowNot.innerHTML += `<div class="info-cell"><span class="note-val-display ${colorClass}">${getNoteName(noteObj.index, currentDirection)}</span></div>`;
                 });
                 document.querySelectorAll('.fret.active:not(.is-muted)').forEach(f => {
                     const noteName = f.querySelector('.note-name').innerText;
-                    const currentNoteIdx = NOTES.indexOf(noteName);
+                    const currentNoteIdx = NOTES.indexOf(noteName) === -1 ? NOTES_FLAT.indexOf(noteName) : NOTES.indexOf(noteName);
                     const diff = (currentNoteIdx - result.root + 12) % 12;
                     const degLabel = THEORY.INTERVALS[diff];
+                    f.querySelector('.note-name').innerText = getNoteName(currentNoteIdx, currentDirection);
                     f.querySelector('.interval-name').innerText = degLabel;
                     if (diff === 0) f.classList.add('is-root');
                     else if (degLabel.includes('b')) f.classList.add('is-minor');
@@ -349,7 +387,7 @@ function updateLogic(autoFill = true) {
             intervalsArr.forEach(v => displaySteps.push(v));
             intervalsArr.forEach(v => displaySteps.push(v + 12));
             displaySteps.forEach((v, i) => {
-                const noteName = NOTES[(rootIdx + v) % 12];
+                const noteName = getNoteName((rootIdx + v) % 12, currentDirection);
                 const diff = (rootIdx + v) % 12;
                 const dist = (diff - rootIdx + 12) % 12;
                 const degLabel = THEORY.INTERVALS[dist];
@@ -365,10 +403,12 @@ function updateLogic(autoFill = true) {
                 }
             });
         }
+        
         if (displayMode === 'box-shapes' && autoFill) {
+            allFrets.forEach(f => { if(parseInt(f.dataset.fret) !== 0) f.classList.remove('active'); });
             SpecialModulesManager.applyBox(rootIdx, allFrets);
         } else if (displayMode === '3nps' && autoFill) {
-            allFrets.forEach(f => f.classList.remove('active', 'invalid', 'is-root', 'is-minor', 'is-major', 'is-blue'));
+            allFrets.forEach(f => f.classList.remove('active'));
             const rows = Array.from(document.querySelectorAll('.string-row')).reverse();
             const scaleNotes = intervalsArr.map(i => (rootIdx + i) % 12);
             let basePos = (rootIdx + 3); let rootFret = basePos + octaveOffset;
@@ -376,7 +416,8 @@ function updateLogic(autoFill = true) {
             const getScaleNoteAt = (index) => { const len = scaleNotes.length; return scaleNotes[((index % len) + len) % len]; };
             for (let sIdx = startIndex; sIdx < rows.length; sIdx++) {
                 let countOnString = 0;
-                let stringBaseIdx = NOTES.indexOf(rows[sIdx].querySelector('.fret[data-fret="0"] .note-name').innerText);
+                let stringBaseOpenName = rows[sIdx].querySelector('.fret[data-fret="0"] .note-name').innerText;
+                let stringBaseIdx = NOTES.indexOf(stringBaseOpenName) === -1 ? NOTES_FLAT.indexOf(stringBaseOpenName) : NOTES.indexOf(stringBaseOpenName);
                 let startSearch = (sIdx === startIndex) ? rootFret - (includeLowString ? 5 : 0) : rootFret - 2;
                 for (let f = startSearch; f <= 24 && countOnString < 3; f++) {
                     if (f < 0) continue;
@@ -387,43 +428,71 @@ function updateLogic(autoFill = true) {
                     }
                 }
             }
+        } else if (displayMode === 'full' && autoFill) {
+             allFrets.forEach(f => {
+                const noteName = f.querySelector('.note-name').innerText;
+                const noteIdx = NOTES.indexOf(noteName) === -1 ? NOTES_FLAT.indexOf(noteName) : NOTES.indexOf(noteName);
+                const diff = (noteIdx - rootIdx + 12) % 12;
+                if (parseInt(f.dataset.fret) !== 0) f.classList.remove('active');
+                if (intervalsArr.includes(diff)) f.classList.add('active');
+             });
         }
+
         allFrets.forEach(f => {
-            const noteName = f.querySelector('.note-name').innerText;
-            const noteIdx = NOTES.indexOf(noteName);
-            const diff = (noteIdx - rootIdx + 12) % 12;
-            const isInScale = intervalsArr.includes(diff);
-            const intSpan = f.querySelector('.interval-name');
-            if (displayMode === 'full' && autoFill) { if (parseInt(f.dataset.fret) !== 0) f.classList.remove('active'); if (isInScale) f.classList.add('active'); }
             if (f.classList.contains('active') && !f.classList.contains('is-muted')) {
+                const noteNameElem = f.querySelector('.note-name');
+                const noteIdx = NOTES.indexOf(noteNameElem.innerText) === -1 ? NOTES_FLAT.indexOf(noteNameElem.innerText) : NOTES.indexOf(noteNameElem.innerText);
+                const diff = (noteIdx - rootIdx + 12) % 12;
                 const degLabel = THEORY.INTERVALS[diff];
+                const isInScale = intervalsArr.includes(diff);
                 const isBlue = (activeModule === 'caged' && showBlues && ((isMinor && diff === 6) || (!isMinor && diff === 3)));
+                
+                noteNameElem.innerText = getNoteName(noteIdx, currentDirection);
+
+                const intSpan = f.querySelector('.interval-name');
                 if (intSpan) intSpan.innerText = degLabel;
-                if (!isInScale) f.classList.add('invalid');
-                else {
+                if (!isInScale) {
+                    f.classList.add('invalid');
+                } else {
                     if (diff === 0) f.classList.add('is-root');
                     else if (isBlue) f.classList.add('is-blue');
                     else if (degLabel.includes('b')) f.classList.add('is-minor');
                     else f.classList.add('is-major');
                 }
-            } else if (intSpan) { intSpan.innerText = ""; }
+            }
         });
     }
 }
 
 function init() {
     const sSel = document.getElementById('stringNumSelector'), tSel = document.getElementById('tuningSelector'), cRoot = document.getElementById('commonRoot'), cType = document.getElementById('commonType'), dMode = document.getElementById('displayMode'), rBtn = document.getElementById('resetBtn'), octUp = document.getElementById('octaveUp'), octDown = document.getElementById('octaveDown'), lowBtn = document.getElementById('toggleLowString'), boxShapeSel = document.getElementById('boxShapeSelector'), boxShapeGroup = document.getElementById('boxShapeGroup'), opt3nps = document.getElementById('opt3nps'), optBox = document.getElementById('optBox'), openToggle = document.getElementById('toggleOpenStrings'), pentToggle = document.getElementById('togglePentatonic'), blueToggle = document.getElementById('toggleBlues');
-    if (openToggle) openToggle.onclick = () => { allowOpenStrings = !allowOpenStrings; updateLogic(true); };
+    
+    if (openToggle) openToggle.onclick = () => { 
+        if (dMode.value === 'box-shapes') {
+            allowOpenStrings = !allowOpenStrings; 
+            updateLogic(true); 
+        }
+    };
+    
     if (pentToggle) pentToggle.onclick = () => { isPentatonic = !isPentatonic; updateLogic(true); };
     if (blueToggle) blueToggle.onclick = () => { showBlues = !showBlues; updateLogic(true); };
     lowBtn.onclick = () => { includeLowString = !includeLowString; updateLogic(true); };
     octUp.onclick = () => { octaveOffset = (octaveOffset === 12) ? 0 : 12; updateLogic(true); };
     octDown.onclick = () => { octaveOffset = (octaveOffset === -12) ? 0 : -12; updateLogic(true); };
-    dMode.addEventListener('change', () => { boxShapeGroup.style.display = (dMode.value === 'box-shapes') ? 'block' : 'none'; updateLogic(true); });
+    
+    dMode.addEventListener('change', () => { 
+        boxShapeGroup.style.display = (dMode.value === 'box-shapes') ? 'block' : 'none'; 
+        if (dMode.value !== 'box-shapes') allowOpenStrings = false;
+        updateLogic(true); 
+    });
+    
     boxShapeSel.addEventListener('change', () => { boxShapeMode = boxShapeSel.value; updateLogic(true); });
     sSel.addEventListener('change', () => { tSel.innerHTML = Object.keys(THEORY.TUNINGS[sSel.value]).map(t => '<option value="' + t + '">' + t + '</option>').join(''); render(); });
     tSel.addEventListener('change', render);
-    rBtn.onclick = () => { octaveOffset = 0; includeLowString = false; allowOpenStrings = false; isPentatonic = false; showBlues = false; updateLogic(true); };
+    rBtn.onclick = () => { octaveOffset = 0; includeLowString = false; allowOpenStrings = false; isPentatonic = false; showBlues = false; 
+        document.querySelectorAll('.fret').forEach(f => f.classList.remove('active', 'is-muted'));
+        updateLogic(true); 
+    };
     cRoot.innerHTML = NOTES.map((n, i) => '<option value="' + i + '">' + n + '</option>').join('');
     const btns = { chord: 'toggleChordBtn', scale: 'toggleScaleBtn', exotic: 'toggleExoticBtn', caged: 'toggleCagedBtn' };
     Object.keys(btns).forEach(k => {

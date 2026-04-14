@@ -88,7 +88,6 @@ body {
     min-height: 0;
 }
 
-/* Sostituisci il .fretboard-body attuale con: */
 .fretboard-body::before {
     content: "";
     position: absolute;
@@ -163,32 +162,8 @@ body {
     display: flex; 
     height: clamp(30px, 6vh, 60px); 
     position: relative; 
-    z-index: 20;
+    z-index: 10; 
     flex-shrink: 0;
-    overflow: visible !important;
-}
-.fret::after { 
-    content: ""; 
-    position: absolute; 
-    width: 100%; 
-    height: var(--sw); 
-    background: linear-gradient(to bottom, 
-        #444 0%, 
-        #666 15%, 
-        #ddd 35%,
-        #fff 50%, 
-        #ccc 65%,
-        #666 85%,
-        #333 100%
-    );
-    box-shadow: 
-        0 2px 4px rgba(0,0,0,0.6),
-        0 -1px 2px rgba(255,255,255,0.2);
-    top: 50%; 
-    transform: translateY(-50%); 
-    z-index: 2; 
-    pointer-events: none; 
-    transition: all 0.1s ease;
 }
 .fret { 
     flex: 1; 
@@ -229,25 +204,28 @@ body {
     z-index: 70; 
 }
 
-/* ✅ CORDA: SEMPLICE, NON SI ASSOTTIGLIA MAI */
+/* ✅ CORDA IN RILIEVO */
 .fret::after { 
     content: ""; 
     position: absolute; 
-    width: 100%; 
+    width: calc(100% + 2px); 
+    left: -1px;
     height: var(--sw); 
-    background: linear-gradient(to bottom, #777 0%, #eee 30%, #fff 45%, #ccc 55%, #555 100%); 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    background: linear-gradient(to bottom, 
+        #444 0%, #666 15%, #ddd 35%, #fff 50%, #ccc 65%, #666 85%, #333 100%
+    );
+    box-shadow: 0 3px 5px rgba(0,0,0,0.8);
     top: 50%; 
-    transform: translateY(-50%);
-    z-index: 15;
+    transform: translateY(-50%); 
+    z-index: 100; 
     pointer-events: none; 
     transition: filter 0.15s linear;
-    filter: brightness(0.85);
+    filter: brightness(0.85); /* Leggermente più scura di base */
 }
 
-/* ✅ QUANDO PREMUTO: Solo brightness! */
+/* ✅ MODIFICA ESCLUSIVA: La corda NON si illumina se la nota è presente */
 .fret.active::after {
-    filter: brightness(1.4);
+    filter: brightness(0.85); /* Mantiene il colore base per non disturbare la nota */
 }
 
 .note-circle { 
@@ -258,18 +236,17 @@ body {
     width: 30px; 
     height: 30px; 
     border-radius: 50%; 
-    background: var(--cyan); 
+    background-color: var(--cyan); 
     color: #000; 
     display: none; 
     flex-direction: column; 
     align-items: center; 
     justify-content: center; 
-    z-index: 50;
+    z-index: 200; 
     border: 2px solid #000; 
     font-weight: 900; 
     font-size: 11px; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3), inset 0 0 5px rgba(255,255,255,0.5);
-    backdrop-filter: blur(2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Ombra più netta */
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -307,38 +284,38 @@ body {
 }
 
 @keyframes stringVibrate {
-    0% { transform: translateY(0); }
-    25% { transform: translateY(-1px); }
-    75% { transform: translateY(1px); }
-    100% { transform: translateY(0); }
+    0% { transform: translateY(-50%) translateY(0); }
+    25% { transform: translateY(-50%) translateY(-1px); }
+    75% { transform: translateY(-50%) translateY(1px); }
+    100% { transform: translateY(-50%) translateY(0); }
 }
 .string-row.vibrating .fret::after {
     animation: stringVibrate 0.05s infinite;
 }
 
 .fret.is-root .note-circle { 
-    background: var(--tonica) !important; 
+    background-color: var(--tonica) !important; 
     box-shadow: 0 0 10px var(--tonica); 
     color: #000 !important; 
 }
 .fret.is-minor .note-circle { 
-    background: var(--minor-green) !important; 
+    background-color: var(--minor-green) !important; 
     box-shadow: 0 0 8px var(--minor-green); 
     color: #000 !important; 
 }
 .fret.is-major .note-circle { 
-    background: var(--major-blue) !important; 
+    background-color: var(--major-blue) !important; 
     box-shadow: 0 0 8px var(--major-blue); 
     color: #000 !important; 
 }
 .fret.is-blue .note-circle { 
-    background: var(--blue-note) !important; 
+    background-color: var(--blue-note) !important; 
     box-shadow: 0 0 10px var(--blue-note), 0 0 20px #aa00ff; 
     color: #fff !important; 
     border-color: #fff !important;
 }
 .fret.invalid .note-circle { 
-    background: var(--error) !important; 
+    background-color: var(--error) !important; 
     color: #fff !important; 
 }
 .mute-x { 
@@ -347,7 +324,7 @@ body {
     color: var(--error); 
     font-size: 30px; 
     font-weight: 900; 
-    z-index: 55; 
+    z-index: 220; 
     pointer-events: none; 
     text-shadow: 0 0 5px #000; 
 }
@@ -376,32 +353,12 @@ body {
     border-radius: 50%; 
     border: 1px solid #000; 
 }
-.dot-leg.root { 
-    background: var(--tonica); 
-    box-shadow: 0 0 6px var(--tonica); 
-}
-.dot-leg.major { 
-    background: var(--major-blue); 
-    box-shadow: 0 0 6px var(--major-blue); 
-}
-.dot-leg.minor { 
-    background: var(--minor-green); 
-    box-shadow: 0 0 6px var(--minor-green); 
-}
-.dot-leg.blue { 
-    background: var(--blue-note); 
-    box-shadow: 0 0 6px var(--blue-note); 
-}
-.dot-leg.extra { 
-    background: var(--error); 
-    box-shadow: 0 0 6px var(--error); 
-}
-.leg-text { 
-    font-size: 8px; 
-    font-weight: 700; 
-    text-transform: uppercase; 
-    color: #ccc; 
-}
+.dot-leg.root { background: var(--tonica); box-shadow: 0 0 6px var(--tonica); }
+.dot-leg.major { background: var(--major-blue); box-shadow: 0 0 6px var(--major-blue); }
+.dot-leg.minor { background: var(--minor-green); box-shadow: 0 0 6px var(--minor-green); }
+.dot-leg.blue { background: var(--blue-note); box-shadow: 0 0 6px var(--blue-note); }
+.dot-leg.extra { background: var(--error); box-shadow: 0 0 6px var(--error); }
+.leg-text { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #ccc; }
 .fnum { 
     position: absolute; 
     top: -35px; 

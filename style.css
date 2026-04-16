@@ -1,7 +1,15 @@
+/**
+ * ROOT & VARIABILI
+ * Definizione della palette colori neon e delle variabili globali.
+ */
 :root { 
     --gold: #b58e31; --cyan: #00d4ff; --wood: #2a1b10; --bg: #0a0a0a; 
     --tonica: #ffcc00; --error: #ff4444; --minor: #00ff88; --major-blue: #0077ff; --minor-green: #22cc22; --blue-note: #ff00ff;
 }
+
+/**
+ * RESET & LAYOUT GENERALE
+ */
 body { 
     background: var(--bg); 
     color: white; 
@@ -9,6 +17,7 @@ body {
     margin: 0; 
     overflow-x: hidden; 
 }
+
 .app-container { 
     padding: 10px; 
     display: flex; 
@@ -19,6 +28,10 @@ body {
     box-sizing: border-box;
     overflow: hidden;
 }
+
+/**
+ * HEADER & TOOLBAR
+ */
 .logo { 
     color: var(--cyan); 
     text-shadow: 0 0 15px var(--cyan); 
@@ -27,6 +40,7 @@ body {
     letter-spacing: 2px; 
     font-size: 1.5rem;
 }
+
 .toolbar { 
     display: flex; 
     gap: 8px; 
@@ -35,6 +49,7 @@ body {
     justify-content: center; 
     flex-shrink: 0;
 }
+
 .tool-card { 
     background: #1a1a1a; 
     border: 1px solid var(--cyan); 
@@ -44,6 +59,7 @@ body {
     display: flex; 
     flex-direction: column; 
 }
+
 .label { 
     color: var(--cyan); 
     font-size: 9px; 
@@ -51,6 +67,7 @@ body {
     text-transform: uppercase; 
     margin-bottom: 2px; 
 }
+
 .custom-select, .custom-select-dark { 
     background: #000; 
     border: 1px solid var(--cyan); 
@@ -62,10 +79,12 @@ body {
     outline: none; 
     border-radius: 3px; 
 }
+
 .custom-select option, .custom-select-dark option { 
     background: #1a1a1a; 
     color: #fff; 
 }
+
 .reset-btn { 
     background: #111; 
     border: 1px solid var(--error); 
@@ -76,6 +95,11 @@ body {
     font-size: 10px; 
     font-weight: 800; 
 }
+
+/**
+ * TASTIERA (FRETBOARD) CONSTRUCTION
+ * Gestione dello sfondo del manico, dei tasti e delle corde.
+ */
 .fretboard-container { 
     width: 100%; 
     overflow-x: hidden; 
@@ -99,6 +123,7 @@ body {
     z-index: 15;
     pointer-events: none;
 }
+
 .fretboard-body { 
     background: 
         repeating-linear-gradient(
@@ -128,6 +153,9 @@ body {
     border-radius: 2px;
 }
 
+/**
+ * SEGNATASTI E BARRETTE (INLAYS & FRETS)
+ */
 .inlays-layer { 
     position: absolute; 
     width: 100%; 
@@ -136,6 +164,7 @@ body {
     pointer-events: none; 
     z-index: 1; 
 }
+
 .inlay-fret { 
     flex: 1; 
     border-right: 2px solid var(--gold); 
@@ -147,17 +176,20 @@ body {
         inset 0 1px 0 rgba(255,255,255,0.1),
         inset 0 -1px 0 rgba(0,0,0,0.3);
 }
+
 .inlay-fret[data-fret="0"] { 
     flex: 0 0 clamp(80px, 8vw, 150px); 
     border-right: 8px solid #ddd; 
     background: #000; 
 }
+
 .dot { 
     width: 16px; 
     height: 16px; 
     background: rgba(255, 255, 255, 0.5); 
     border-radius: 50%; 
 }
+
 .string-row { 
     display: flex; 
     height: clamp(30px, 6vh, 60px); 
@@ -165,6 +197,7 @@ body {
     z-index: 10; 
     flex-shrink: 0;
 }
+
 .fret { 
     flex: 1; 
     position: relative; 
@@ -177,6 +210,7 @@ body {
     overflow: visible !important;
 }
 
+/* Effetto hover sul tasto */
 .fret:not([data-fret="0"]):hover::before {
     content: "";
     position: absolute;
@@ -193,18 +227,38 @@ body {
     justify-content: center; 
     gap: 4px; 
 }
+
+/**
+ * CONTROLLI INTEGRATI SUL CAPOTASTO
+ */
 .integrated-btn { 
     cursor: pointer; 
     background: #333; 
     color: #fff; 
     border: 1px solid #555; 
-    padding: 1px 4px; 
-    font-size: 9px; 
+    padding: 2px 6px; 
+    font-size: 10px; 
     border-radius: 3px; 
-    z-index: 70; 
+    z-index: 250; 
+    font-weight: 900;
+    transition: all 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-/* ✅ CORDA IN RILIEVO */
+.integrated-btn:hover {
+    background: #444;
+    border-color: var(--cyan);
+    transform: translateY(-1px);
+}
+
+.integrated-btn:active {
+    transform: translateY(1px);
+    box-shadow: none;
+}
+
+/**
+ * RENDERING DELLE CORDE (STRINGS)
+ */
 .fret::after { 
     content: ""; 
     position: absolute; 
@@ -220,14 +274,16 @@ body {
     z-index: 100; 
     pointer-events: none; 
     transition: filter 0.15s linear;
-    filter: brightness(0.85); /* Leggermente più scura di base */
+    filter: brightness(0.85); 
 }
 
-/* ✅ MODIFICA ESCLUSIVA: La corda NON si illumina se la nota è presente */
 .fret.active::after {
-    filter: brightness(0.85); /* Mantiene il colore base per non disturbare la nota */
+    filter: brightness(0.85); 
 }
 
+/**
+ * VISUALIZZAZIONE NOTE (CIRCLE) E STATI
+ */
 .note-circle { 
     position: absolute; 
     top: 50%; 
@@ -246,7 +302,7 @@ body {
     border: 2px solid #000; 
     font-weight: 900; 
     font-size: 11px; 
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Ombra più netta */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -254,9 +310,10 @@ body {
     transform: translate(-50%, -50%) scale(0.9);
 }
 
-.fret.active .note-circle { 
+.fret.active .note-circle, .fret.ghost-note .note-circle { 
     display: flex; 
 }
+
 .fret[data-fret="0"] .note-circle { 
     display: flex; 
     background: #333; 
@@ -265,6 +322,7 @@ body {
     position: static; 
     transform: none; 
 }
+
 .fret[data-fret="0"].active .note-circle { 
     display: flex; 
     background: var(--cyan); 
@@ -272,17 +330,19 @@ body {
     border-color: #000; 
 }
 
+/* Animazione per note fantasma */
 @keyframes pulseGhost {
-    0% { opacity: 0.3; }
+    0% { opacity: 0.25; }
     50% { opacity: 0.5; }
-    100% { opacity: 0.3; }
+    100% { opacity: 0.25; }
 }
 
 .fret.ghost-note .note-circle {
-    opacity: 0.35;
-    animation: pulseGhost 3s infinite ease-in-out;
+    opacity: 0.35 !important;
+    animation: pulseGhost 3s infinite ease-in-out !important;
 }
 
+/* Animazione vibrazione corda */
 @keyframes stringVibrate {
     0% { transform: translateY(-50%) translateY(0); }
     25% { transform: translateY(-50%) translateY(-1px); }
@@ -293,6 +353,9 @@ body {
     animation: stringVibrate 0.05s infinite;
 }
 
+/**
+ * COLORAZIONI NOTE E GRADI
+ */
 .fret.is-root .note-circle { 
     background-color: var(--tonica) !important; 
     box-shadow: 0 0 10px var(--tonica); 
@@ -314,10 +377,22 @@ body {
     color: #fff !important; 
     border-color: #fff !important;
 }
-.fret.invalid .note-circle { 
+
+/**
+ * GESTIONE ERRORI E MUTE
+ */
+.fret:not([data-fret="0"]).invalid .note-circle { 
     background-color: var(--error) !important; 
     color: #fff !important; 
 }
+
+.fret[data-fret="0"].invalid .note-circle {
+    background-color: #1a1a1a !important; 
+    border: 2px solid var(--error) !important; 
+    box-shadow: 0 0 12px var(--error), inset 0 0 4px var(--error); 
+    color: #555 !important; 
+}
+
 .mute-x { 
     display: none; 
     position: absolute; 
@@ -328,14 +403,20 @@ body {
     pointer-events: none; 
     text-shadow: 0 0 5px #000; 
 }
+
 .fret.is-muted .mute-x { 
     display: block; 
 }
+
+/**
+ * LEGENDA E NUMERAZIONE TASTI
+ */
 .leg-item { 
     display: flex; 
     align-items: center; 
     gap: 4px; 
 }
+
 .dot { 
     width: 16px; 
     height: 16px; 
@@ -347,6 +428,7 @@ body {
     border-radius: 50%;
     box-shadow: 0 2px 4px rgba(0,0,0,0.4);
 }
+
 .dot-leg { 
     width: 10px; 
     height: 10px; 
@@ -358,7 +440,9 @@ body {
 .dot-leg.minor { background: var(--minor-green); box-shadow: 0 0 6px var(--minor-green); }
 .dot-leg.blue { background: var(--blue-note); box-shadow: 0 0 6px var(--blue-note); }
 .dot-leg.extra { background: var(--error); box-shadow: 0 0 6px var(--error); }
+
 .leg-text { font-size: 8px; font-weight: 700; text-transform: uppercase; color: #ccc; }
+
 .fnum { 
     position: absolute; 
     top: -35px; 
@@ -368,6 +452,10 @@ body {
     width: 100%; 
     text-align: center; 
 }
+
+/**
+ * SEZIONE MODULI E CONTROLLI
+ */
 .modules-section { 
     width: 100%; 
     padding: 0 10px; 
@@ -378,12 +466,14 @@ body {
     flex-direction: column;
     gap: 5px;
 }
+
 .modules-tabs { 
     display: flex; 
     gap: 2px; 
     width: 100%;
     flex-wrap: wrap;
 }
+
 .module-btn { 
     flex: 1; 
     background: #111; 
@@ -397,12 +487,14 @@ body {
     border-radius: 4px 4px 0 0;
     min-width: 90px;
 }
+
 .module-btn.active { 
     background: #1a1a1a; 
     border: 1px solid var(--cyan); 
     border-bottom: none; 
     color: var(--cyan); 
 }
+
 .module-content-area { 
     background: #1a1a1a; 
     border: 1px solid var(--cyan); 
@@ -417,6 +509,7 @@ body {
     flex-direction: column;
     gap: 8px;
 }
+
 .module-grid-layout { 
     display: grid; 
     grid-template-columns: auto 1fr;
@@ -424,6 +517,10 @@ body {
     width: 100%;
     align-items: start;
 }
+
+/**
+ * DISPLAY INFORMAZIONI E RISULTATI
+ */
 .info-row { 
     display: flex; 
     min-height: auto;
@@ -436,6 +533,7 @@ body {
     padding: 5px 0;
     gap: 5px;
 }
+
 .label-tiny { 
     color: var(--cyan); 
     font-size: 9px; 
@@ -444,6 +542,7 @@ body {
     width: 60px; 
     flex-shrink: 0; 
 }
+
 .module-info-display { 
     flex: 1; 
     display: flex; 
@@ -452,6 +551,7 @@ body {
     align-items: flex-start;
     width: 100%;
 }
+
 .info-cell { 
     display: flex; 
     flex-direction: column; 
@@ -460,15 +560,18 @@ body {
     width: 45px; 
     flex-shrink: 0; 
 }
+
 .info-val { 
     font-weight: 900; 
     font-size: 20px; 
     color: #fff; 
 }
+
 .note-val-display { 
     font-weight: 900; 
     font-size: 20px; 
 }
+
 .inter-cell { 
     width: 45px; 
     flex-shrink: 0; 
@@ -479,13 +582,19 @@ body {
     font-weight: 900; 
     font-size: 16px; 
 }
+
 .note-val-display.is-root { color: var(--tonica); }
 .note-val-display.is-major { color: var(--major-blue); }
 .note-val-display.is-minor { color: var(--minor-green); }
 .note-val-display.is-blue { color: var(--blue-note); }
+
+/**
+ * BOTTONI E UTILITY VISIVE
+ */
 .hidden { 
     display: none !important; 
 }
+
 .sub-btn.active-glow { 
     background: #002233 !important; 
     border-color: var(--cyan) !important; 
@@ -493,6 +602,7 @@ body {
     box-shadow: 0 0 10px var(--cyan), inset 0 0 5px var(--cyan); 
     text-shadow: 0 0 5px var(--cyan); 
 }
+
 .sub-btn {
     background: #111;
     border: 1px solid #444;
@@ -504,6 +614,7 @@ body {
     font-weight: 700;
     text-transform: uppercase;
 }
+
 .legend-mini {
     margin-top: 15px;
     display: flex;
@@ -512,6 +623,10 @@ body {
     justify-content: center;
     width: 100%;
 }
+
+/**
+ * RESPONSIVE ADAPTATION
+ */
 @media (max-width: 768px) {
     .module-grid-layout { grid-template-columns: 1fr; }
     .string-row { height: clamp(25px, 5vh, 50px); }
